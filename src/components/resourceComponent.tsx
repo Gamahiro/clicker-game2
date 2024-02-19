@@ -1,73 +1,123 @@
-import { SetStateAction, useState } from "react"
+import { RefObject, SetStateAction, useEffect, useState } from "react"
 import Resource from "../classes/Resource"
+import { getResourceColor } from "../util/getColor"
 
 
 interface ResourceComponentProps {
     resource: Resource
     resourceAmount: number
-    setResourceAmount: any
+    resourceElementList: any
+    resBtnContainer: RefObject<HTMLDivElement>
 }
 
-const ResourceComponent: React.FC<ResourceComponentProps> = ({ resource, resourceAmount, setResourceAmount }) => {
+const ResourceComponent: React.FC<ResourceComponentProps> = ({ resource, resourceAmount, resourceElementList, resBtnContainer }) => {
 
+    if (!resBtnContainer.current) return
+
+    const [upgradesVisible, setUpgradesVisible] = useState(false)
 
     const [clickValue, setClickValue] = useState(1)
     const [clickUpgradePrice, setClickUpgradePrice] = useState(10)
-    const [tickAmountUpgradePrice, setTickAmountUpgradePrice] = useState(10)
-    const [tickSpeedUpgradePrice, setTickSpeedUpgradePrice] = useState(10)
 
+    const [tickAmountUpgradePrice, setTickAmountUpgradePrice] = useState(10)
+
+    const [tickSpeedUpgradePrice, setTickSpeedUpgradePrice] = useState(10)
+    const [tickSpeedMaxed, setTickSpeedMaxed] = useState(false)
 
     const handleResourceClick = () => {
-        resource.add(clickValue)
-        setResourceAmount(resource.amount)
+        resourceElementList.updateResource(resource.name, resource.add, [clickValue])        
     }
 
     const handleClickUpgrade = () => {
         if (resourceAmount >= clickUpgradePrice) {
-            resource.sub(clickUpgradePrice)
+            resourceElementList.updateResource(resource.name, resource.sub, [clickUpgradePrice])
+
             setClickUpgradePrice(clickUpgradePrice * 2)
             setClickValue(clickValue + 2)
-            setResourceAmount(resource.amount)
+            
         }
     }
 
     const handleTickAmountUpgrade = () => {
+        console.log(resourceAmount, tickAmountUpgradePrice)
         if (resourceAmount >= tickAmountUpgradePrice) {
-            resource.sub(tickAmountUpgradePrice)
+            resourceElementList.updateResource(resource.name, resource.sub, [tickAmountUpgradePrice])
+            resourceElementList.updateResource(resource.name, resource.upgradeTickAmount)
             setTickAmountUpgradePrice(tickAmountUpgradePrice * 2)
-            resource.upgradeTickAmount()
-            setResourceAmount(resource.amount)
         }
     }
 
     const handleTickSpeedUpgrade = () => {
+
+        console.log('tickSpeedUpgradePrice', tickSpeedUpgradePrice)
+
+        let nextTickSpeed = resource.tickSpeed - Math.ceil(resource.tickSpeed / 4)
+
+        if (nextTickSpeed <= resource.tickSpeedMax) return console.log('Max speed reached')
         if (resourceAmount >= tickSpeedUpgradePrice) {
-            resource.sub(tickSpeedUpgradePrice)
+            resourceElementList.updateResource(resource.name, resource.sub, [tickSpeedUpgradePrice])
+            resourceElementList.updateResource(resource.name, resource.upgradeTickSpeed)
             setTickSpeedUpgradePrice(tickSpeedUpgradePrice * 2)
-            resource.upgradeTickSpeed()
-            setResourceAmount(resource.amount)
+            nextTickSpeed = resource.tickSpeed - Math.ceil(resource.tickSpeed / 4)
+            if (nextTickSpeed <= resource.tickSpeedMax) {
+                setTickSpeedMaxed(true)
+            }
         }
     }
 
+    const handleVisibleUpgrades = () => {
+        setUpgradesVisible(!upgradesVisible)
+    }
+
+    const upgradeBtnStyle = {
+        margin: '2px',
+        display: 'flex',
+        flexDirection: 'column' as 'column',
+        alignItems: 'center' as 'center'
+    }
 
 
     return (
         <>
             <div style={{ display: 'flex', flexDirection: 'column' }}>
-            <button onClick={handleResourceClick}>Add {resource.name}</button>
 
-                <div style={{ border: '2px solid black' }}>
-                    <div>Upgrade click {clickValue} {`=>`} {clickValue + 2}</div>
-                    <button onClick={handleClickUpgrade}>Upgrade {clickUpgradePrice}</button>
-                </div>
-                <div style={{ border: '2px solid black' }}>
-                    <div>Upgrade Tick Amount {resource.tickAmount} {'=>'} {resource.tickAmount + 2}</div>
-                    <button onClick={handleTickAmountUpgrade}>Upgrade {tickAmountUpgradePrice}</button>
-                </div>
-                <div style={{ border: '2px solid black' }}>
-                    <div>Upgrade Tick Speed {resource.tickSpeed} {'=>'} {resource.tickSpeed - Math.ceil(resource.tickSpeed / 4)}</div>
-                    <button onClick={handleTickSpeedUpgrade}>Upgrade {tickSpeedUpgradePrice}</button>
-                </div>
+                <button style={{ marginLeft: '0px', display: 'flex', justifyContent: 'center', height: '50px', backgroundColor: `${getResourceColor(resource.name)}` }} onClick={handleResourceClick}></button>
+                <button onClick={handleVisibleUpgrades}>⏫</button>
+
+                {upgradesVisible &&
+                    <>
+                        <button style={upgradeBtnStyle} onClick={handleClickUpgrade}>
+                            <div>🖱️</div>
+                            <div>{clickUpgradePrice}</div>
+                        </button>
+
+
+                        <button style={upgradeBtnStyle} onClick={handleTickAmountUpgrade}>
+                            <div>🤏</div>
+                            <div> {tickAmountUpgradePrice} </div>
+                        </button>
+
+
+                        <button style={upgradeBtnStyle} onClick={handleTickSpeedUpgrade}>
+                            {tickSpeedMaxed
+                                ?
+                                <>
+                                    <div>✅</div>
+                                    <div>MAX</div>
+                                </>
+                                :
+                                <>
+                                    <div> ⏩</div>
+                                    <div>{tickSpeedUpgradePrice}</div>
+                                </>
+                            }
+
+
+                        </button>
+                    </>
+                }
+
+
             </div>
         </>
     )
