@@ -1,3 +1,13 @@
+export interface ResourceJson {
+    name: string
+    amount: number
+    tickAmount: number
+    tickSpeed: number
+    tickSpeedMax: number
+}
+
+
+
 class Resource {
     name: string
     amount: number
@@ -12,33 +22,41 @@ class Resource {
         this.amount = amount || 0
         this.tickAmount = tickAmount || 1
         this.tickSpeed = tickSpeed || 240
-        this.tickSpeedMax = tickSpeedMax || 10
+        this.tickSpeedMax = tickSpeedMax || 5
     }
 
     add(amount: number) {
-        console.log('adding')
-        return new Resource(this.name, this.amount + amount, this.tickAmount, this.tickSpeed, this.tickSpeedMax)
+        this.amount += amount
     }
 
     sub(amount: number) {
-        console.log('subtracting')
         if (this.amount < amount) return console.log('Not enough resources')
-        return new Resource(this.name, this.amount - amount, this.tickAmount, this.tickSpeed, this.tickSpeedMax)
+        this.amount -= amount        
     }
 
     tick() {
-        console.log('tick', this.name)
-        return new Resource(this.name, this.amount + this.tickAmount, this.tickAmount, this.tickSpeed, this.tickSpeedMax)
+        this.amount += this.tickAmount
     }
 
     upgradeTickAmount() {
-        return new Resource(this.name, this.amount, this.tickAmount + 1, this.tickSpeed, this.tickSpeedMax)
+        this.tickAmount += 1
     }
 
     upgradeTickSpeed() {
-        if(this.tickSpeed - Math.ceil(this.tickSpeed / 4) <= this.tickSpeedMax) return console.log('Max speed reached')
-        return new Resource(this.name, this.amount, this.tickAmount, this.tickSpeed - Math.ceil(this.tickSpeed / 4), this.tickSpeedMax)
+        const nextTickSpeed = Math.ceil(this.tickSpeed / 4)
 
+        if(this.tickSpeed - nextTickSpeed < this.tickSpeedMax) return console.log('Max speed reached')
+        this.tickSpeed -= nextTickSpeed
+    }
+
+    getJson() {
+        return {
+            name: this.name,
+            amount: this.amount,
+            tickAmount: this.tickAmount,
+            tickSpeed: this.tickSpeed,
+            tickSpeedMax: this.tickSpeedMax
+        }
     }
 
 }

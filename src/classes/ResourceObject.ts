@@ -1,15 +1,29 @@
+import { canvasHeight } from "../components/resourceCanvas";
 import GameObject, { Vector2 } from "./GameObject";
+import Resource from "./Resource";
+
+export interface ResourceObjectJson {
+    position: Vector2
+    size: Vector2
+    color: string
+    currentDirection: Vector2
+    distancePerFrame: number
+
+}
+
 
 class ResourceObject extends GameObject {
 
     currentDirection: Vector2    
     distancePerFrame: number
+    maxSize: number
 
     constructor(position: Vector2, size: Vector2, color: string, currentDirection?: Vector2, distancePerFrame?: number) {
         super(position, size, color)
         
         this.currentDirection = currentDirection || this.directions.up
-        this.distancePerFrame = distancePerFrame || 0
+        this.distancePerFrame = distancePerFrame || ((canvasHeight - this.size.y) * 2) / 240
+        this.maxSize = 60
     }
 
     directions = {
@@ -19,32 +33,40 @@ class ResourceObject extends GameObject {
         right: { x: 1, y: 0 }
     }
 
-    setDistancePerFrame(distance: number) {
-      console.log('setting distance per frame', distance)
-      return new ResourceObject(this.position, this.size, this.color, this.currentDirection, distance)
+    increaseSize(amount: number) {
+      if (this.size.x + amount > this.maxSize) return
+        this.size = { x: this.size.x + amount, y: this.size.y + amount }
+        this.move({x:-amount / 2, y: 0})
     }
 
-    move(vector: Vector2) {            
-
-      let newPosition = { x: this.position.x + vector.x, y: this.position.y + vector.y }
-      return new ResourceObject(newPosition, this.size, this.color, this.currentDirection, this.distancePerFrame)
-  }
-
-    autoMove(ctx: CanvasRenderingContext2D) {
-      console.log(ctx)
-        let moved = this.move({x: 0, y: this.currentDirection.y * this.distancePerFrame})
-        console.log(moved)
-        if (ctx) {
-
-            if (this.position.y < 0) {
-            return new ResourceObject(moved.position, this.size, this.color, this.directions.down, this.distancePerFrame)
+    setDistancePerFrame(distance: number) {
+      this.distancePerFrame = distance
+    }
     
+
+    autoMove(resource: Resource) {      
+        this.move({x: 0, y: this.currentDirection.y * this.distancePerFrame})
+
+        
+            if (this.position.y < 0) {
+              this.currentDirection = this.directions.down   
+              resource.tick() 
             }
-            if (this.position.y > ctx.canvas.height - this.size.y) {
-              return new ResourceObject(moved.position, this.size, this.color, this.directions.up, this.distancePerFrame)
+            if (this.position.y > canvasHeight - this.size.y) {
+              this.currentDirection = this.directions.up
 
             }
-          }
+          
+    }
+
+    getJson() {
+        return {
+            position: this.position,
+            size: this.size,
+            color: this.color,
+            currentDirection: this.currentDirection,
+            distancePerFrame: this.distancePerFrame
+        }
     }
 
 

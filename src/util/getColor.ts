@@ -9,6 +9,8 @@ export const getResourceColor = (resourceName: string) => {
             return 'green'
         case 'gold':
             return 'gold'
+        case 'water':
+            return 'blue'
         default:
             return 'black'
     }

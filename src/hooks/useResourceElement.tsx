@@ -1,99 +1,72 @@
-import { useReducer } from 'react';
-import Resource from '../classes/Resource';
-import ResourceObject from '../classes/ResourceObject';
+import { Reducer, useReducer } from 'react';
+import { ResourceJson } from '../classes/Resource';
+import { ResourceObjectJson } from '../classes/ResourceObject';
 
-type ResourceElement = {
-  resource: Resource;
-  resourceObject: ResourceObject;
-};
+type Action = {
+  type: string,
+  payload: { newResource: ResourceJson | undefined, newObject: ResourceObjectJson | undefined }
+}
 
-type ElementsState = {
-  resourceElementsLocked: ResourceElement[];
-  resourceElementsUnlocked: ResourceElement[];
-};
+const elementReducer = (state: InitialResourceState, action: Action) => {
 
-const elementsReducer = (state: ElementsState, action) => {
+  let newResource: ResourceJson | undefined = action.payload.newResource || state.resource;
+  let newObject: ResourceObjectJson | undefined = action.payload.newObject || state.resourceObject;
+
   switch (action.type) {
     case 'updateResource':
       return {
         ...state,
-        resourceElementsUnlocked: state.resourceElementsUnlocked.map((resourceElement: ResourceElement) => {
-          
-
-          if (resourceElement.resource.name === action.resourceName) {
-            let newResource
-            if (action.args && action.args.length > 0) {
-              newResource = resourceElement.resource[action.method](...action.args)
-              return { ...resourceElement, resource: newResource }
-            }
-            else {
-              newResource = resourceElement.resource[action.method]()
-
-              return { ...resourceElement, resource: newResource }
-            }
-
-          }
-          else {
-            return resourceElement
-          }
-        }),
+        resource: newResource
       }
-
-
-    case 'unlockNextElement':
-      const [nextElement, ...rest] = state.resourceElementsLocked;
-      return {
-        resourceElementsLocked: rest,
-        resourceElementsUnlocked: [...state.resourceElementsUnlocked, nextElement],
-      };
-
-    case 'updateGameObject':
+    case 'updateObject':
       return {
         ...state,
-        resourceElementsUnlocked: state.resourceElementsUnlocked.map((resourceElement) => {
-          if (resourceElement.resource.name === action.resourceName) {
-            let newResourceObject
-            console.log(action.args)
-            if (action.args && action.args.length > 0) {
-              newResourceObject = resourceElement.resourceObject[action.method](...action.args)
-              return { ...resourceElement, resourceObject: newResourceObject }
-            }
-            else {
-              newResourceObject = resourceElement.resourceObject[action.method]()
-              return { ...resourceElement, resourceObject: newResourceObject }
-            }
-          }
-          else {
-            return resourceElement
-          }
-        }),
-      };
-    // Handle other actions...
+        resourceObject: newObject
+      }
+    case 'updateState':
+
+      return {
+        ...state,
+        resource: newResource,
+        resourceObject: newObject
+      }
     default:
       return state;
   }
 };
 
-const useResourceElements = (initialState) => {
-  const [resourceElements, dispatch] = useReducer(elementsReducer, initialState);
+export type InitialResourceState = {
+  resource: ResourceJson,
+  resourceObject: ResourceObjectJson
+}
 
-  const unlockNextElement = () => {
-    if (resourceElements.resourceElementsLocked.length > 0) {
-      dispatch({ type: 'unlockNextElement' });
-    }
-  };
+export type ResourceState = {
+  resource: ResourceJson,
+  resourceObject: ResourceObjectJson
+  updateResource: (newResource: ResourceJson) => void
+  updateObject: (newObject: ResourceObjectJson) => void
+  updateState: (newResource: ResourceJson, newObject: ResourceObjectJson) => void
+}
 
-  const updateResource = (resourceName: string, method: string, args: any = []) => {
-    dispatch({ type: 'updateResource', resourceName, method, args });
+const useResourceElement = (initialState: InitialResourceState) => {
+  const [resourceElement, dispatch] = useReducer<Reducer<InitialResourceState, Action>>(elementReducer, initialState);
+  //console.log(resourceElement)
+  const { resource, resourceObject } = resourceElement;
+
+  const updateResource = (newResource: ResourceJson) => {
+    dispatch({ type: 'updateResource', payload: { newResource: newResource, newObject: undefined } })
   }
 
-  const updateGameObject = (resourceName: string, method: string, args: any = []) => {
-    console.log('updateGameObject', resourceName, method, args)
-    dispatch({ type: 'updateGameObject', resourceName, method, args });
-
+  const updateObject = (newObject: ResourceObjectJson) => {
+    dispatch({ type: 'updateObject', payload: { newResource: undefined, newObject: newObject } });
   }
 
-  return { resourceElements, updateResource, updateGameObject, unlockNextElement };
+  const updateState = (newResource: ResourceJson, newObject: ResourceObjectJson) => {
+    dispatch({ type: 'updateState', payload: { newResource, newObject } });
+  }
+
+
+  return { resource, resourceObject, updateResource, updateObject, updateState };
 };
 
-export default useResourceElements;
+export default useResourceElement;
